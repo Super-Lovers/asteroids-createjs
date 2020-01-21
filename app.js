@@ -14,7 +14,7 @@ const FIRE_KEY = 74;
 // *************************
 // Player ship references
 // *************************
-let ship, shipContainer = new createjs.Container();
+let ship, shipContainer;
 let projectiles = [];
 
 const TURN_SPEED = 3;
@@ -57,13 +57,13 @@ function tick() {
     turnShip();
     pushProjectiles();
 
-    if (wavesSinceSpawned >= rockSpawners.length) {
-        rockSpawners = [];
-        createRockSpawners();
-        wavesSinceSpawned = 0;
-    }
+    // if (wavesSinceSpawned >= rockSpawners.length) {
+    //     rockSpawners = [];
+    //     createRockSpawners();
+    //     wavesSinceSpawned = 0;
+    // }
 
-    spawnRocks();
+    // spawnRocks();
     turnRocks();
     pushRocks();
 
@@ -81,9 +81,11 @@ function createCursor() {
     cursorGraphic.endFill();
 
     cursorShape = new createjs.Shape(cursorGraphic);
-    cursorShape.regX = cursorShape.regY = 0;
+    cursorShape.regX = 0;
+    cursorShape.regY = 50;
+    cursorShape.alpha = 0;
 
-    shipContainer.addChild(ship, cursorShape);
+    shipContainer  = new createjs.Container();
     stage.addChild(cursorShape);
 }
 
@@ -95,12 +97,13 @@ function positionCursor() {
 function pushProjectiles() {
     projectiles.forEach(projectileObj => {
         if (projectileObj.targetX == 0 && projectileObj.targetY == 0) {
-            projectileObj.targetX = cursorShape.x;
-            projectileObj.targetY = cursorShape.y;
+            let globalCoordsOfCursor = shipContainer.localToGlobal(cursorShape.x, cursorShape.y);
+            projectileObj.targetX = globalCoordsOfCursor.x;
+            projectileObj.targetY = globalCoordsOfCursor.y;
 
-            let directionX = projectileObj.targetX - cursorShape.x;
-            let directionY = projectileObj.targetY - cursorShape.y;
-    
+            let directionX = projectileObj.targetX - projectileObj.projectile.x;
+            let directionY = projectileObj.targetY - projectileObj.projectile.y;
+
             let vectorLength = Math.sqrt(directionX * directionX + directionY * directionY);
     
             let vectorNormalX = directionX / vectorLength;
@@ -333,8 +336,23 @@ function createRockSpawner(min, max, side) {
 function turnShip() {
     if (pressingLeft) {
         shipContainer.rotation -= TURN_SPEED;
+
+        shipContainer.addChild(ship, cursorShape);
+        shipContainer.regX = ship.x;
+        shipContainer.regY = ship.y;
+        shipContainer.x = ship.x;
+        shipContainer.y = ship.y;
+        stage.addChild(shipContainer);
+        
     } if (pressingRight) {
         shipContainer.rotation += TURN_SPEED;
+
+        shipContainer.addChild(ship, cursorShape);
+        shipContainer.regX = ship.x;
+        shipContainer.regY = ship.y;
+        shipContainer.x = ship.x;
+        shipContainer.y = ship.y;
+        stage.addChild(shipContainer);
     }
 }
 
@@ -344,10 +362,12 @@ function fire() {
 
         let projectileGraphic = new createjs.Graphics();
         projectileGraphic.beginFill('red');
-        projectileGraphic.drawRoundRect(ship.x, ship.y - (ship.regY / 2), 3, 10, 2);
+        projectileGraphic.drawRoundRect(0, 0, 7, 7, 4);
         projectileGraphic.endFill();
 
         let projectile = new createjs.Shape(projectileGraphic);
+        projectile.x = ship.x;
+        projectile.y = ship.y;
 
         let projectileObj = {
             projectile: projectile,
