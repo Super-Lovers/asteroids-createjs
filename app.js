@@ -14,12 +14,13 @@ const FIRE_KEY = 74;
 // *************************
 // Player ship references
 // *************************
-let ship;
+let ship, shipContainer = new createjs.Container();
 let projectiles = [];
 
 const TURN_SPEED = 3;
 const PROJECTILE_SPEED = 7;
 
+let cursorShape;
 let rateOfFire = 10;
 let timeSinceLastShot = 0;
 
@@ -47,30 +48,80 @@ function init() {
     loadEvents();
     loadShip();
     loadRocks();
+    createCursor();
 }
 
 function tick() {
     timeSinceLastShot += createjs.Ticker.getMeasuredTickTime();
     
     turnShip();
-    // pushProjectiles();
+    pushProjectiles();
 
     if (wavesSinceSpawned >= rockSpawners.length) {
         rockSpawners = [];
         createRockSpawners();
         wavesSinceSpawned = 0;
     }
+
     spawnRocks();
     turnRocks();
     pushRocks();
 
+    if (ship !== undefined) {
+        positionCursor();
+    }
+
     stage.update();
 }
 
+function createCursor() {
+    let cursorGraphic = new createjs.Graphics();
+    cursorGraphic.beginFill('green');
+    cursorGraphic.drawCircle(0, 0, 5);
+    cursorGraphic.endFill();
+
+    cursorShape = new createjs.Shape(cursorGraphic);
+    cursorShape.regX = cursorShape.regY = 0;
+
+    shipContainer.addChild(ship, cursorShape);
+    stage.addChild(cursorShape);
+}
+
+function positionCursor() {
+    cursorShape.x = ship.x;
+    cursorShape.y = ship.y - ship.regY;
+}
+
 function pushProjectiles() {
-    projectiles.forEach(projectile => {
-        projectile.projectile.x += Math.cos(projectile.shipRotation) * PROJECTILE_SPEED;
-        projectile.projectile.y += Math.sin(projectile.shipRotation) * PROJECTILE_SPEED;
+    projectiles.forEach(projectileObj => {
+        if (projectileObj.targetX == 0 && projectileObj.targetY == 0) {
+            projectileObj.targetX = cursorShape.x;
+            projectileObj.targetY = cursorShape.y;
+
+            let directionX = projectileObj.targetX - cursorShape.x;
+            let directionY = projectileObj.targetY - cursorShape.y;
+    
+            let vectorLength = Math.sqrt(directionX * directionX + directionY * directionY);
+    
+            let vectorNormalX = directionX / vectorLength;
+            let vectorNormalY = directionY / vectorLength;
+
+            projectileObj.directionNormalX = vectorNormalX;
+            projectileObj.directionNormalY = vectorNormalY;
+        }
+
+        projectileObj.projectile.x += projectileObj.directionNormalX * PROJECTILE_SPEED;
+        projectileObj.projectile.y += projectileObj.directionNormalY * PROJECTILE_SPEED;
+
+        let padding = 50;
+        if (projectileObj.projectile.x > stage.canvas.width + padding ||
+            projectileObj.projectile.x < 0 - padding ||
+            projectileObj.projectile.y < 0 - padding ||
+            projectileObj.projectile.y > stage.canvas.height + padding) {
+
+            stage.removeChild(projectileObj.projectile);
+            stage.clear();
+        }
     });
 }
 
@@ -281,9 +332,9 @@ function createRockSpawner(min, max, side) {
 
 function turnShip() {
     if (pressingLeft) {
-        ship.rotation -= TURN_SPEED;
+        shipContainer.rotation -= TURN_SPEED;
     } if (pressingRight) {
-        ship.rotation += TURN_SPEED;
+        shipContainer.rotation += TURN_SPEED;
     }
 }
 
@@ -293,13 +344,17 @@ function fire() {
 
         let projectileGraphic = new createjs.Graphics();
         projectileGraphic.beginFill('red');
-        projectileGraphic.drawRoundRect(ship.x, ship.y + (ship.regY / 2), 3, 10, 2);
+        projectileGraphic.drawRoundRect(ship.x, ship.y - (ship.regY / 2), 3, 10, 2);
         projectileGraphic.endFill();
 
         let projectile = new createjs.Shape(projectileGraphic);
 
         let projectileObj = {
             projectile: projectile,
+            targetX: 0,
+            targetY: 0,
+            directionNormalX: 0,
+            directionNormalY: 0
         }
 
         projectiles.push(projectileObj);
