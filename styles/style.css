@@ -14,5 +14,6 @@ canvas {
     left: 0;
     right: 0;
     background-color: white;
-    border: 1px solid salmon;
+    border: 1px solid rosybrown;
+    border-radius: 5px;
 }

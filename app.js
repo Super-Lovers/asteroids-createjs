@@ -1,7 +1,8 @@
 let stage, canvas, context, queue;
-let ship;
-let projectiles = [];
 
+// *************************
+// Key bindings
+// *************************
 const LEFT_KEY = 65;
 let pressingLeft = false;
 const RIGHT_KEY = 68;
@@ -10,14 +11,30 @@ const FORWARD_KEY = 87;
 let pressingForward = false;
 const FIRE_KEY = 74;
 
+// *************************
+// Player ship references
+// *************************
+let ship;
+let projectiles = [];
+
 const TURN_SPEED = 3;
 const PROJECTILE_SPEED = 7;
 
 let rateOfFire = 10;
 let timeSinceLastShot = 0;
 
+// *************************
+// Rock references
+// *************************
 let rockSpawners = [];
 let bigRocks = [], mediumRocks = [], smallRocks = [];
+let allRocksInGame = [];
+let rockSpawnInterval = 40;
+
+const ROCK_SPEED = 5;
+const ROCK_TURN_SPEED = 2;
+let wavesPerSpawner = (Math.random() * 3) + 1;
+let wavesSinceSpawned = 0;
 
 function init() {
     canvas = document.getElementById('demoCanvas');
@@ -34,30 +51,100 @@ function init() {
 
 function tick() {
     timeSinceLastShot += createjs.Ticker.getMeasuredTickTime();
+    
     turnShip();
+    // pushProjectiles();
 
-    // projectiles.forEach(projectile => {
-    //     projectile.projectile.x += Math.cos(projectile.shipRotation) * PROJECTILE_SPEED;
-    //     projectile.projectile.y += Math.sin(projectile.shipRotation) * PROJECTILE_SPEED;
-    // });
+    if (wavesSinceSpawned >= rockSpawners.length) {
+        rockSpawners = [];
+        createRockSpawners();
+        wavesSinceSpawned = 0;
+    }
+    spawnRocks();
+    turnRocks();
+    pushRocks();
 
+    stage.update();
+}
+
+function pushProjectiles() {
+    projectiles.forEach(projectile => {
+        projectile.projectile.x += Math.cos(projectile.shipRotation) * PROJECTILE_SPEED;
+        projectile.projectile.y += Math.sin(projectile.shipRotation) * PROJECTILE_SPEED;
+    });
+}
+
+function turnRocks() {
+    allRocksInGame.forEach(rock => {
+        rock.rotation += ROCK_TURN_SPEED;
+    });
+}
+
+function pushRocks() {
+    allRocksInGame.forEach(rockObj => {
+        if (rockObj.targetX == 0 && rockObj.targetY == 0) {
+            rockObj.targetX = ship.x;
+            rockObj.targetY = ship.y;
+
+            let directionX = rockObj.targetX - rockObj.rock.x;
+            let directionY = rockObj.targetY - rockObj.rock.y;
+    
+            let vectorLength = Math.sqrt(directionX * directionX + directionY * directionY);
+    
+            let vectorNormalX = directionX / vectorLength;
+            let vectorNormalY = directionY / vectorLength;
+
+            rockObj.directionNormalX = vectorNormalX;
+            rockObj.directionNormalY = vectorNormalY;
+        }
+
+        rockObj.rock.x += rockObj.directionNormalX * ROCK_SPEED;
+        rockObj.rock.y += rockObj.directionNormalY * ROCK_SPEED;
+
+        let padding = 50;
+        if (rockObj.rock.x > stage.canvas.width + padding ||
+            rockObj.rock.x < 0 - padding ||
+            rockObj.rock.y < 0 - padding ||
+            rockObj.rock.y > stage.canvas.height + padding) {
+
+            stage.removeChild(rockObj.rock);
+            stage.clear();
+
+            // TODO: Remove rock from array of all rocks
+        }
+    });
+}
+
+function spawnRocks() {
     rockSpawners.forEach(spawner => {
-        spawner.timeSinceLastSpawn += createjs.Ticker.getMeasuredTickTime();
+        spawner.timeSinceLastSpawn += 0.5;
 
         if (spawner.timeSinceLastSpawn >= spawner.spawnInterval) {
             let randomBigRock = bigRocks[Math.round(
                 Math.random() * (bigRocks.length - 1)
             )];
             let rock = new createjs.Bitmap(randomBigRock);
-            rock.x = spawner.x - rock.image.width / 2;
-            rock.y = spawner.y - rock.image.height / 2;
+            rock.regX = rock.image.width / 2;
+            rock.regY = rock.image.height / 2;
 
+            rock.x = spawner.x;
+            rock.y = spawner.y;
+
+            let rockObj = {
+                rock: rock,
+                targetX: 0,
+                targetY: 0,
+                directionNormalX: 0,
+                directionNormalY: 0
+            }
+
+            allRocksInGame.push(rockObj);
             stage.addChild(rock);
             spawner.timeSinceLastSpawn = 0;
+
+            wavesSinceSpawned++;
         }
     });
-
-    stage.update();
 }
 
 function loadEvents() {
@@ -114,10 +201,6 @@ function loadShip() {
         stage.addChild(ship);
 
         console.log('Loaded ship');
-
-        for (let i = 0; i < 2; i++) {
-            createRockSpawners();
-        }
     });
 }
 
@@ -153,25 +236,26 @@ function createRockSpawners() {
 }
 
 function createRockSpawner(min, max, side) {
+    let padding = 50;
     let point = min + ((Math.random() * (max - min)));
     let x, y;
 
     switch (side) {
         case 'left':
-            x = min;
+            x = min - padding;
             y = point;
             break;
         case 'right':
-            x = stage.canvas.width;
+            x = stage.canvas.width + padding;
             y = point;
             break;
         case 'top':
             x = point;
-            y = min;
+            y = min - padding;
             break;
         case 'bottom':
             x = point;
-            y = stage.canvas.height;
+            y = stage.canvas.height + padding;
             break;
     }
 
@@ -180,7 +264,7 @@ function createRockSpawner(min, max, side) {
         y: y,
         side: side,
         timeSinceLastSpawn: 0,
-        spawnInterval: (Math.random() * 30) + 10 // Between 10 and 30
+        spawnInterval: rockSpawnInterval
     }
 
     let spawnerGraphic = new createjs.Graphics();
@@ -192,7 +276,6 @@ function createRockSpawner(min, max, side) {
     spawnerShape.regX = spawnerShape.regY = 0;
     stage.addChild(spawnerShape);
 
-    // console.log(spawner.x + ", " + spawner.y);
     rockSpawners.push(spawner);
 }
 
