@@ -1,4 +1,5 @@
 let stage, canvas, context, queue, game_state = 'playing';
+let backgroundMusic;
 
 // *************************
 // Key bindings
@@ -54,8 +55,15 @@ function init() {
 
     loadEvents();
     loadShip();
+    loadAudio();
     loadRocks();
     createCursor();
+
+    setTimeout(function() {
+        backgroundMusic = createjs.Sound.play('background_music');
+        backgroundMusic.volume = 0.008;
+        backgroundMusic.loop = true;
+    }, 2000);
 }
 
 function tick() {
@@ -257,7 +265,6 @@ function isShipCollidingWithRock() {
         let rock = rockObj.rock;
 
         let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
-        // console.log(shipObj.ship.x + ", " + shipObj.ship.y + " | " + shipObj.ship.getBounds().width + ", " + shipObj.ship.getBounds().height);
         if (
             ((globalCoordsOfShip.x >= rock.x - rock.getBounds().width / 2 && globalCoordsOfShip.x <= rock.x + rock.getBounds().width / 2) &&
             (globalCoordsOfShip.y >= rock.y - rock.getBounds().height / 2 && globalCoordsOfShip.y <= rock.y + rock.getBounds().height / 2))) {
@@ -271,6 +278,16 @@ function isShipCollidingWithRock() {
 
                 createjs.Sound.play('ship_explosion');
                 game_state = 'game over';
+                if (engineSoundEffect !== undefined) {
+                    engineSoundEffect.stop();
+                }
+                if (engineAnimation !== undefined) {
+                    engineAnimation.stop();
+                }
+                if (backgroundMusic !== undefined) {
+                    backgroundMusic.stop();
+                }
+                
                 return true;
         }
     });
@@ -370,11 +387,11 @@ function loadAudio() {
     createjs.Sound.registerSound('./assets/audio/engine.mp3', 'engine');
     createjs.Sound.registerSound('./assets/audio/ship_explosion.mp3', 'ship_explosion');
     createjs.Sound.registerSound('./assets/audio/meteorite_explosion.mp3', 'meteorite_explosion');
+    createjs.Sound.registerSound('./assets/audio/background_music.mp3', 'background_music');
 }
 
 function loadShip() {
     queue = new createjs.LoadQueue();
-    loadAudio();
 
     queue.loadFile({id:'ship', src:'./assets/space_ship.png'});
     queue.addEventListener('complete', function() {
