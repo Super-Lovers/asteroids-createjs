@@ -22,8 +22,10 @@ const TURN_SPEED = 5;
 const PROJECTILE_SPEED = 7;
 
 let cursorShape;
-let rateOfFire = 10;
+let rateOfFire = 15;
 let timeSinceLastShot = 0;
+let engineSoundEffect;
+let isEngineSoundPlaying = false;
 
 // *************************
 // Rock references
@@ -55,7 +57,8 @@ function init() {
 }
 
 function tick() {
-    timeSinceLastShot += createjs.Ticker.getMeasuredTickTime();
+    // TODO: Use real-time seconds
+    timeSinceLastShot += 0.8; 
     
     turnShip();
     pushShip();
@@ -223,6 +226,9 @@ function loadEvents() {
                 pressingLeft = false;
                 break;
             case FORWARD_KEY:
+                if (engineSoundEffect !== undefined) {
+                    engineSoundEffect.play();
+                }
                 pressingForward = true;
                 break;
             case FIRE_KEY:
@@ -238,12 +244,17 @@ function loadEvents() {
         if (press.keyCode == RIGHT_KEY && pressingLeft != true) {
             pressingRight = false;
         }
+        if (press.keyCode == FORWARD_KEY) {
+            pressingForward = false;
+            engineSoundEffect.stop();
+        }
     });
 }
 
 function loadAudio() {
     queue.installPlugin(createjs.Sound);
     createjs.Sound.registerSound('./assets/audio/burst-fire.mp3', 'fire');
+    createjs.Sound.registerSound('./assets/audio/engine.mp3', 'engine');
 }
 
 function loadShip() {
@@ -382,6 +393,15 @@ function turnShip() {
 
 function pushShip() {
     if (pressingForward) {
+        if (isEngineSoundPlaying == false) {
+            engineSoundEffect = createjs.Sound.play('engine');
+            engineSoundEffect.addEventListener('complete', function() {
+                isEngineSoundPlaying = false;
+            });
+            
+            isEngineSoundPlaying = true;
+        }
+
         shipContainer.addChild(ship, cursorShape);
         if (shipContainer.regX == 0 && shipContainer.regY == 0) {
             shipContainer.regX = shipObj.ship.x;
