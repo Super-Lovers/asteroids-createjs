@@ -38,7 +38,7 @@ let allRocksInGame = [];
 let rockId = 0;
 let rockSpawnInterval = 40;
 
-const ROCK_SPEED = 5;
+const ROCK_SPEED = 0.7;
 const MIN_ROCK_TURN_SPEED = 2;
 const MAX_ROCK_TURN_SPEED = 5;
 let wavesPerSpawner = (Math.random() * 3) + 1;
@@ -79,7 +79,7 @@ function tick() {
     if (ship !== undefined) {
         positionCursor();
     }
-
+    
     stage.update();
 }
 
@@ -153,6 +153,8 @@ function pushProjectiles() {
 
         projectileObj.projectile.x += projectileObj.directionNormalX * PROJECTILE_SPEED;
         projectileObj.projectile.y += projectileObj.directionNormalY * PROJECTILE_SPEED;
+        
+        projectileObj.projectile.setBounds(projectileObj.projectile.x, projectileObj.projectile.y, 7, 7);
 
         let padding = 50;
         if (projectileObj.projectile.x > stage.canvas.width + padding ||
@@ -162,6 +164,10 @@ function pushProjectiles() {
 
             stage.removeChild(projectileObj.projectile);
             stage.clear();
+
+            projectiles.splice(projectiles.indexOf(projectileObj), 1);
+        } else {
+            isBlastCollidingWithRock(projectileObj);
         }
     });
 }
@@ -194,6 +200,8 @@ function pushRocks() {
     
             rockObj.rock.x += rockObj.directionNormalX * ROCK_SPEED;
             rockObj.rock.y += rockObj.directionNormalY * ROCK_SPEED;
+
+            rockObj.rock.setBounds(rockObj.rock.x, rockObj.rock.y, rockObj.rock.image.width, rockObj.rock.image.height,);
     
             let padding = 50;
             if (rockObj.rock.x > stage.canvas.width + padding ||
@@ -210,6 +218,33 @@ function pushRocks() {
     });
 }
 
+function isBlastCollidingWithRock(fireBlast) {
+    let isColliding = false;
+
+    let projectile = fireBlast.projectile;
+
+    allRocksInGame.forEach(rockObj => {
+        let rock = rockObj.rock;
+
+        if (
+            ((projectile.x >= rock.x - rock.getBounds().width / 2 && projectile.x <= rock.x + rock.getBounds().width / 2) &&
+            (projectile.y >= rock.y - rock.getBounds().height / 2 && projectile.y <= rock.y + rock.getBounds().height / 2))) {
+                stage.removeChild(rockObj.rock);
+                stage.clear();
+
+                allRocksInGame.splice(allRocksInGame.indexOf(rockObj), 1);
+
+                stage.removeChild(projectile);
+                stage.clear();
+    
+                projectiles.splice(projectiles.indexOf(fireBlast), 1);
+                return true;
+        }
+    });
+
+    return isColliding;
+}
+
 function spawnRocks() {
     rockSpawners.forEach(spawner => {
         spawner.timeSinceLastSpawn += 0.5;
@@ -224,6 +259,8 @@ function spawnRocks() {
 
             rock.x = spawner.x;
             rock.y = spawner.y;
+
+            rock.setBounds(rock.x, rock.y, rock.image.width, rock.image.height,);
 
             let rockObj = {
                 id: rockId,
@@ -490,6 +527,8 @@ function fire() {
         let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
         projectile.x = globalCoordsOfShip.x;
         projectile.y = globalCoordsOfShip.y;
+
+        projectile.setBounds(projectile.x, projectile.y, 7, 7);
 
         let projectileObj = {
             projectile: projectile,
