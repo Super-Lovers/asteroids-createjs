@@ -14,9 +14,10 @@ const FIRE_KEY = 74;
 // *************************
 // Player ship references
 // *************************
-let ship, shipContainer;
+let ship, shipObj, shipContainer;
 let projectiles = [];
 
+const SHIP_SPEED = 2;
 const TURN_SPEED = 3;
 const PROJECTILE_SPEED = 7;
 
@@ -55,6 +56,7 @@ function tick() {
     timeSinceLastShot += createjs.Ticker.getMeasuredTickTime();
     
     turnShip();
+    pushShip();
     pushProjectiles();
 
     // if (wavesSinceSpawned >= rockSpawners.length) {
@@ -252,6 +254,14 @@ function loadShip() {
         ship.regX = 16;
         ship.regY = 21;
 
+        shipObj = {
+            ship: ship,
+            targetX: 0,
+            targetY: 0,
+            directionNormalX: 0,
+            directionNormalY: 0
+        }
+
         stage.addChild(ship);
 
         console.log('Loaded ship');
@@ -338,21 +348,59 @@ function turnShip() {
         shipContainer.rotation -= TURN_SPEED;
 
         shipContainer.addChild(ship, cursorShape);
-        shipContainer.regX = ship.x;
-        shipContainer.regY = ship.y;
-        shipContainer.x = ship.x;
-        shipContainer.y = ship.y;
+        if (shipContainer.regX == 0 && shipContainer.regY == 0) {
+            shipContainer.regX = shipObj.ship.x;
+            shipContainer.regY = shipObj.ship.y;
+            shipContainer.x = shipObj.ship.x;
+            shipContainer.y = shipObj.ship.y;
+        }
+
         stage.addChild(shipContainer);
         
     } if (pressingRight) {
         shipContainer.rotation += TURN_SPEED;
 
         shipContainer.addChild(ship, cursorShape);
-        shipContainer.regX = ship.x;
-        shipContainer.regY = ship.y;
-        shipContainer.x = ship.x;
-        shipContainer.y = ship.y;
+        if (shipContainer.regX == 0 && shipContainer.regY == 0) {
+            shipContainer.regX = shipObj.ship.x;
+            shipContainer.regY = shipObj.ship.y;
+            shipContainer.x = shipObj.ship.x;
+            shipContainer.y = shipObj.ship.y;
+        }
+
         stage.addChild(shipContainer);
+    }
+}
+
+function pushShip() {
+    if (pressingForward) {
+        shipContainer.addChild(ship, cursorShape);
+        if (shipContainer.regX == 0 && shipContainer.regY == 0) {
+            shipContainer.regX = shipObj.ship.x;
+            shipContainer.regY = shipObj.ship.y;
+            shipContainer.x = shipObj.ship.x;
+            shipContainer.y = shipObj.ship.y;
+        }
+
+        stage.addChild(shipContainer);
+        let globalCoordsOfCursor = shipContainer.localToGlobal(cursorShape.x, cursorShape.y);
+        let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
+        shipObj.targetX = globalCoordsOfCursor.x;
+        shipObj.targetY = globalCoordsOfCursor.y;
+
+        let directionX = shipObj.targetX - globalCoordsOfShip.x;
+        let directionY = shipObj.targetY - globalCoordsOfShip.y;
+
+        let vectorLength = Math.sqrt(directionX * directionX + directionY * directionY);
+
+        let vectorNormalX = directionX / vectorLength;
+        let vectorNormalY = directionY / vectorLength;
+
+        shipObj.directionNormalX = vectorNormalX;
+        shipObj.directionNormalY = vectorNormalY;
+
+        shipContainer.x += shipObj.directionNormalX * SHIP_SPEED;
+        shipContainer.y += shipObj.directionNormalY * SHIP_SPEED;
     }
 }
 
@@ -366,8 +414,10 @@ function fire() {
         projectileGraphic.endFill();
 
         let projectile = new createjs.Shape(projectileGraphic);
-        projectile.x = ship.x;
-        projectile.y = ship.y;
+        
+        let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
+        projectile.x = globalCoordsOfShip.x;
+        projectile.y = globalCoordsOfShip.y;
 
         let projectileObj = {
             projectile: projectile,
