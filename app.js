@@ -27,6 +27,8 @@ let timeSinceLastShot = 0;
 let engineSoundEffect;
 let isEngineSoundPlaying = false;
 
+let engineAnimation;
+
 // *************************
 // Rock references
 // *************************
@@ -99,6 +101,35 @@ function createCursor() {
 function positionCursor() {
     cursorShape.x = ship.x;
     cursorShape.y = ship.y - ship.regY;
+}
+
+function playEngineAnimation() {
+    if (engineAnimation === undefined) {
+        let engineData = {
+            images: ['./assets/space_ship_engines_spritesheet.png'],
+            frames: [
+                [0, 0, 10, 6],
+                [10, 6, 10, 6],
+                [20, 12, 10, 6],
+                [30, 18, 10, 6]
+            ],
+            animations: {
+                engine: {
+                    frames: [0, 3],
+                    speed: 0.4
+                }
+            }
+        }
+
+        let engineSpritesheet = new createjs.SpriteSheet(engineData);
+        engineAnimation = new createjs.Sprite(engineSpritesheet, 'engine');
+    } else {
+        engineAnimation.alpha = 1;
+        engineAnimation.play();
+    }
+
+    engineAnimation.x = ship.x - 5;
+    engineAnimation.y = ship.y + 18;
 }
 
 function pushProjectiles() {
@@ -226,10 +257,19 @@ function loadEvents() {
                 pressingLeft = false;
                 break;
             case FORWARD_KEY:
-                if (engineSoundEffect !== undefined) {
-                    engineSoundEffect.play();
+                pressingForward = !pressingForward;
+
+                if (pressingForward == true) {
+                    if (engineSoundEffect !== undefined) {
+                        engineSoundEffect.play();
+                    }
+                    playEngineAnimation();
+
+                } else {
+                    engineSoundEffect.stop();
+                    engineAnimation.stop();
+                    engineAnimation.alpha = 0;
                 }
-                pressingForward = true;
                 break;
             case FIRE_KEY:
                 fire();
@@ -244,10 +284,13 @@ function loadEvents() {
         if (press.keyCode == RIGHT_KEY && pressingLeft != true) {
             pressingRight = false;
         }
-        if (press.keyCode == FORWARD_KEY) {
-            pressingForward = false;
-            engineSoundEffect.stop();
-        }
+        // if (press.keyCode == FORWARD_KEY) {
+            // pressingForward = false;
+
+            // engineSoundEffect.stop();
+            // engineAnimation.stop();
+            // engineAnimation.alpha = 0;
+        // }
     });
 }
 
@@ -398,11 +441,10 @@ function pushShip() {
             engineSoundEffect.addEventListener('complete', function() {
                 isEngineSoundPlaying = false;
             });
-            
+
             isEngineSoundPlaying = true;
         }
 
-        shipContainer.addChild(ship, cursorShape);
         if (shipContainer.regX == 0 && shipContainer.regY == 0) {
             shipContainer.regX = shipObj.ship.x;
             shipContainer.regY = shipObj.ship.y;
@@ -410,7 +452,6 @@ function pushShip() {
             shipContainer.y = shipObj.ship.y;
         }
 
-        stage.addChild(shipContainer);
         let globalCoordsOfCursor = shipContainer.localToGlobal(cursorShape.x, cursorShape.y);
         let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
         shipObj.targetX = globalCoordsOfCursor.x;
@@ -429,6 +470,9 @@ function pushShip() {
 
         shipContainer.x += shipObj.directionNormalX * SHIP_SPEED;
         shipContainer.y += shipObj.directionNormalY * SHIP_SPEED;
+        shipContainer.addChild(ship, cursorShape, engineAnimation);
+
+        stage.addChild(shipContainer);
     }
 }
 
