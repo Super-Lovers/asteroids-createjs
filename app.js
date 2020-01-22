@@ -17,8 +17,8 @@ const FIRE_KEY = 74;
 let ship, shipObj, shipContainer;
 let projectiles = [];
 
-const SHIP_SPEED = 2;
-const TURN_SPEED = 3;
+const SHIP_SPEED = 3;
+const TURN_SPEED = 5;
 const PROJECTILE_SPEED = 7;
 
 let cursorShape;
@@ -31,10 +31,12 @@ let timeSinceLastShot = 0;
 let rockSpawners = [];
 let bigRocks = [], mediumRocks = [], smallRocks = [];
 let allRocksInGame = [];
+let rockId = 0;
 let rockSpawnInterval = 40;
 
 const ROCK_SPEED = 5;
-const ROCK_TURN_SPEED = 2;
+const MIN_ROCK_TURN_SPEED = 2;
+const MAX_ROCK_TURN_SPEED = 5;
 let wavesPerSpawner = (Math.random() * 3) + 1;
 let wavesSinceSpawned = 0;
 
@@ -59,13 +61,13 @@ function tick() {
     pushShip();
     pushProjectiles();
 
-    // if (wavesSinceSpawned >= rockSpawners.length) {
-    //     rockSpawners = [];
-    //     createRockSpawners();
-    //     wavesSinceSpawned = 0;
-    // }
+    if (wavesSinceSpawned >= rockSpawners.length) {
+        rockSpawners = [];
+        createRockSpawners();
+        wavesSinceSpawned = 0;
+    }
 
-    // spawnRocks();
+    spawnRocks();
     turnRocks();
     pushRocks();
 
@@ -132,41 +134,44 @@ function pushProjectiles() {
 
 function turnRocks() {
     allRocksInGame.forEach(rock => {
-        rock.rotation += ROCK_TURN_SPEED;
+         rock.rock.rotation += Math.random() * (MAX_ROCK_TURN_SPEED - MIN_ROCK_TURN_SPEED) + MIN_ROCK_TURN_SPEED;
     });
 }
 
 function pushRocks() {
     allRocksInGame.forEach(rockObj => {
-        if (rockObj.targetX == 0 && rockObj.targetY == 0) {
-            rockObj.targetX = ship.x;
-            rockObj.targetY = ship.y;
-
-            let directionX = rockObj.targetX - rockObj.rock.x;
-            let directionY = rockObj.targetY - rockObj.rock.y;
+        if (rockObj !== undefined && rockObj !== null) {
+            if (rockObj.targetX == 0 && rockObj.targetY == 0) {
+                let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
+                rockObj.targetX = globalCoordsOfShip.x;
+                rockObj.targetY = globalCoordsOfShip.y;
     
-            let vectorLength = Math.sqrt(directionX * directionX + directionY * directionY);
+                let directionX = rockObj.targetX - rockObj.rock.x;
+                let directionY = rockObj.targetY - rockObj.rock.y;
+        
+                let vectorLength = Math.sqrt(directionX * directionX + directionY * directionY);
+        
+                let vectorNormalX = directionX / vectorLength;
+                let vectorNormalY = directionY / vectorLength;
     
-            let vectorNormalX = directionX / vectorLength;
-            let vectorNormalY = directionY / vectorLength;
+                rockObj.directionNormalX = vectorNormalX;
+                rockObj.directionNormalY = vectorNormalY;
+            }
+    
+            rockObj.rock.x += rockObj.directionNormalX * ROCK_SPEED;
+            rockObj.rock.y += rockObj.directionNormalY * ROCK_SPEED;
+    
+            let padding = 50;
+            if (rockObj.rock.x > stage.canvas.width + padding ||
+                rockObj.rock.x < 0 - padding ||
+                rockObj.rock.y < 0 - padding ||
+                rockObj.rock.y > stage.canvas.height + padding) {
+    
+                stage.removeChild(rockObj.rock);
+                stage.clear();
 
-            rockObj.directionNormalX = vectorNormalX;
-            rockObj.directionNormalY = vectorNormalY;
-        }
-
-        rockObj.rock.x += rockObj.directionNormalX * ROCK_SPEED;
-        rockObj.rock.y += rockObj.directionNormalY * ROCK_SPEED;
-
-        let padding = 50;
-        if (rockObj.rock.x > stage.canvas.width + padding ||
-            rockObj.rock.x < 0 - padding ||
-            rockObj.rock.y < 0 - padding ||
-            rockObj.rock.y > stage.canvas.height + padding) {
-
-            stage.removeChild(rockObj.rock);
-            stage.clear();
-
-            // TODO: Remove rock from array of all rocks
+                allRocksInGame.splice(allRocksInGame.indexOf(rockObj), 1);
+            }
         }
     });
 }
@@ -187,12 +192,15 @@ function spawnRocks() {
             rock.y = spawner.y;
 
             let rockObj = {
+                id: rockId,
                 rock: rock,
                 targetX: 0,
                 targetY: 0,
                 directionNormalX: 0,
                 directionNormalY: 0
             }
+
+            rockId++;
 
             allRocksInGame.push(rockObj);
             stage.addChild(rock);
