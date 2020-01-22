@@ -1,4 +1,4 @@
-let stage, canvas, context, queue;
+let stage, canvas, context, queue, game_state = 'playing';
 
 // *************************
 // Key bindings
@@ -59,28 +59,30 @@ function init() {
 }
 
 function tick() {
-    // TODO: Use real-time seconds
-    timeSinceLastShot += 0.8; 
+    if (game_state == 'playing') {
+        // TODO: Use real-time seconds
+        timeSinceLastShot += 0.8; 
+        
+        turnShip();
+        pushShip();
+        pushProjectiles();
     
-    turnShip();
-    pushShip();
-    pushProjectiles();
-
-    if (wavesSinceSpawned >= rockSpawners.length) {
-        rockSpawners = [];
-        createRockSpawners();
-        wavesSinceSpawned = 0;
-    }
-
-    spawnRocks();
-    turnRocks();
-    pushRocks();
-
-    if (ship !== undefined) {
-        positionCursor();
-    }
+        if (wavesSinceSpawned >= rockSpawners.length) {
+            rockSpawners = [];
+            createRockSpawners();
+            wavesSinceSpawned = 0;
+        }
     
-    stage.update();
+        spawnRocks();
+        turnRocks();
+        pushRocks();
+    
+        if (ship !== undefined) {
+            positionCursor();
+        }
+        
+        stage.update();
+    }
 }
 
 function createCursor() {
@@ -213,6 +215,8 @@ function pushRocks() {
                 stage.clear();
 
                 allRocksInGame.splice(allRocksInGame.indexOf(rockObj), 1);
+            } else {
+                isShipCollidingWithRock();
             }
         }
     });
@@ -238,6 +242,35 @@ function isBlastCollidingWithRock(fireBlast) {
                 stage.clear();
     
                 projectiles.splice(projectiles.indexOf(fireBlast), 1);
+                createjs.Sound.play('meteorite_explosion');
+                return true;
+        }
+    });
+
+    return isColliding;
+}
+
+function isShipCollidingWithRock() {
+    let isColliding = false;
+
+    allRocksInGame.forEach(rockObj => {
+        let rock = rockObj.rock;
+
+        let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
+        // console.log(shipObj.ship.x + ", " + shipObj.ship.y + " | " + shipObj.ship.getBounds().width + ", " + shipObj.ship.getBounds().height);
+        if (
+            ((globalCoordsOfShip.x >= rock.x - rock.getBounds().width / 2 && globalCoordsOfShip.x <= rock.x + rock.getBounds().width / 2) &&
+            (globalCoordsOfShip.y >= rock.y - rock.getBounds().height / 2 && globalCoordsOfShip.y <= rock.y + rock.getBounds().height / 2))) {
+                stage.removeChild(rockObj.rock);
+                stage.clear();
+
+                allRocksInGame.splice(allRocksInGame.indexOf(rockObj), 1);
+
+                stage.removeChild(shipContainer);
+                stage.clear();
+
+                createjs.Sound.play('ship_explosion');
+                game_state = 'game over';
                 return true;
         }
     });
@@ -333,8 +366,10 @@ function loadEvents() {
 
 function loadAudio() {
     queue.installPlugin(createjs.Sound);
-    createjs.Sound.registerSound('./assets/audio/burst-fire.mp3', 'fire');
+    createjs.Sound.registerSound('./assets/audio/burst_fire.mp3', 'fire');
     createjs.Sound.registerSound('./assets/audio/engine.mp3', 'engine');
+    createjs.Sound.registerSound('./assets/audio/ship_explosion.mp3', 'ship_explosion');
+    createjs.Sound.registerSound('./assets/audio/meteorite_explosion.mp3', 'meteorite_explosion');
 }
 
 function loadShip() {
@@ -352,6 +387,8 @@ function loadShip() {
         // Anchor point
         ship.regX = 16;
         ship.regY = 21;
+
+        ship.setBounds(ship.x, ship.y, 32, 42);
 
         shipObj = {
             ship: ship,
@@ -507,8 +544,9 @@ function pushShip() {
 
         shipContainer.x += shipObj.directionNormalX * SHIP_SPEED;
         shipContainer.y += shipObj.directionNormalY * SHIP_SPEED;
-        shipContainer.addChild(ship, cursorShape, engineAnimation);
+        shipObj.ship.setBounds(shipObj.ship.x, shipObj.ship.y, 32, 42);
 
+        shipContainer.addChild(ship, cursorShape, engineAnimation);
         stage.addChild(shipContainer);
     }
 }
