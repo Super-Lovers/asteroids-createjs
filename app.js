@@ -56,10 +56,12 @@ let blastsFired = 0;
 let secondsSurvivedLabel;
 let rocksDestroyedLabel;
 let blastsFiredLabel;
-let gameTitle;
+let introObj;
 let creditsObj;
 
 function init() {
+    introObj = document.getElementById('intro');
+    introObj.style.display = 'none';
     canvas = document.getElementById('demoCanvas');
     context = canvas.getContext('2d');
     stage = new createjs.Stage(canvas);
@@ -93,7 +95,7 @@ function init() {
 }
 
 function tick() {
-    stage.removeChild(gameTitle, secondsSurvivedLabel, rocksDestroyedLabel, blastsFiredLabel);
+    stage.removeChild(secondsSurvivedLabel, rocksDestroyedLabel, blastsFiredLabel);
 
     if (game_state == 'playing') {
         turnShip();
@@ -114,41 +116,29 @@ function tick() {
             positionCursor();
         }
 
-        drawWatermark();
         drawScores();
         
         stage.update();
     }
 }
 
-function drawWatermark() {
-    gameTitle = new createjs.Text("Asteroids - CreateJS", "14px Segoe UI", '#960000');
-
-    gameTitle.textAlign = 'right';
-    gameTitle.x = stage.canvas.width - 15;
-    gameTitle.y = stage.canvas.height - 30;
-    gameTitle.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
-
-    stage.addChild(gameTitle);
-}
-
 function drawScores() {
-    secondsSurvivedLabel = new createjs.Text('Seconds survived: ' + secondsSurvived, '14px Segoe UI', '#960000');
+    secondsSurvivedLabel = new createjs.Text('⏱️  Seconds survived: ' + secondsSurvived, '14px Segoe UI', '#960000');
     secondsSurvivedLabel.textAlign = 'left';
     secondsSurvivedLabel.x = 15;
     secondsSurvivedLabel.y = 15;
     secondsSurvivedLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
 
-    rocksDestroyedLabel = new createjs.Text('Rocks destroyed: ' + rocksDestroyed, '14px Segoe UI', '#960000');
+    rocksDestroyedLabel = new createjs.Text('☄️ Rocks destroyed: ' + rocksDestroyed, '14px Segoe UI', '#960000');
     rocksDestroyedLabel.textAlign = 'left';
     rocksDestroyedLabel.x = 15;
-    rocksDestroyedLabel.y = 35;
+    rocksDestroyedLabel.y = 40;
     rocksDestroyedLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
 
-    blastsFiredLabel = new createjs.Text('Blasts fired: ' + blastsFired, '14px Segoe UI', '#960000');
+    blastsFiredLabel = new createjs.Text('🧨  Blasts fired: ' + blastsFired, '14px Segoe UI', '#960000');
     blastsFiredLabel.textAlign = 'left';
     blastsFiredLabel.x = 15;
-    blastsFiredLabel.y = 55;
+    blastsFiredLabel.y = 65;
     blastsFiredLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
 
     stage.addChild(secondsSurvivedLabel, rocksDestroyedLabel, blastsFiredLabel);
@@ -398,8 +388,8 @@ function isShipCollidingWithRock() {
                     creditsObj = new createjs.DOMElement(creditsDomObj);
                     creditsObj.regX = 0;
                     creditsObj.regY = 0;
-                    creditsObj.x = stage.canvas.width / 2 - 150;
-                    creditsObj.y = stage.canvas.height / 2 - 60;
+                    creditsObj.x = stage.canvas.width / 2 - 160;
+                    creditsObj.y = stage.canvas.height / 2 - 90;
                 }
                 
                 stage.addChild(creditsObj);

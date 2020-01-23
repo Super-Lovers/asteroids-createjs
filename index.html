@@ -11,14 +11,26 @@
     <script src="node_modules/preloadjs/lib/preloadjs.min.js"></script>
     <link rel="stylesheet" type="text/css" href="styles/style.css">
 </head>
-<body onload="init();">
-    <div id="credits">
-        <h2>Why are you like this? <span>😔</span></h2>
-        <p>You managed to lose? You're a pathetic creature</p>
-        <p>If you really think you want to lose again, click the button below.</p>
-        <button onclick="restartGame()">Play Again</button>
+<body>
+    <div class="container">
+        <div id="intro">
+            <h2>☄️ Asteroids in CreateJS<span></span></h2>
+            <hr>
+            <p>You can steer the ship using the <b>A</b> and <b>D</b> keys. Flying the ship and halting it is done by toggling the <b>W</b> button.</p>
+            <button onclick="init()">Start</button>
+        </div>
+        <div id="credits">
+            <h2>Oh no, ship is boom <span>💥</span></h2>
+            <hr>
+            <p>It is alright, kid, you tried your best. You can give it another try!</p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+        <canvas id="demoCanvas" width="800" height="480"></canvas>
+        <div class="watermark">
+            <b>Asteroids in CreateJS</b> <br>
+            Created by Nikolay Ivanov
+        </div>
     </div>
-    <canvas id="demoCanvas" width="800" height="480"></canvas>
     <script src="app.js"></script>
-</body>
+</bodyonload="drawWatermark()">
 </html>
