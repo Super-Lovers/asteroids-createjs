@@ -1,5 +1,6 @@
 let stage, canvas, context, queue, game_state = 'playing';
 let backgroundMusic;
+let fps = 60;
 
 // *************************
 // Key bindings
@@ -23,8 +24,8 @@ const TURN_SPEED = 5;
 const PROJECTILE_SPEED = 7;
 
 let cursorShape;
-let rateOfFire = 15;
-let timeSinceLastShot = 0;
+let rateOfFire = 20;
+let timePassedAfterFiring = 0;
 let engineSoundEffect;
 let isEngineSoundPlaying = false;
 
@@ -37,20 +38,27 @@ let rockSpawners = [];
 let bigRocks = [], mediumRocks = [], smallRocks = [];
 let allRocksInGame = [];
 let rockId = 0;
-let rockSpawnInterval = 40;
+let rockSpawnInterval = 100;
 
-const ROCK_SPEED = 0.7;
+const ROCK_SPEED = 1;
 const MIN_ROCK_TURN_SPEED = 2;
 const MAX_ROCK_TURN_SPEED = 5;
 let wavesPerSpawner = (Math.random() * 3) + 1;
 let wavesSinceSpawned = 0;
+
+// *************************
+// Score references
+// *************************
+let rocksDestroyed = 0;
+let secondsSurvived = 0;
+let firesBlasted = 0;
 
 function init() {
     canvas = document.getElementById('demoCanvas');
     context = canvas.getContext('2d');
     stage = new createjs.Stage(canvas);
 
-    createjs.Ticker.framerate = 60;
+    createjs.Ticker.framerate = fps;
     createjs.Ticker.addEventListener('tick', tick);
 
     loadEvents();
@@ -64,13 +72,18 @@ function init() {
         backgroundMusic.volume = 0.008;
         backgroundMusic.loop = true;
     }, 2000);
+
+    setInterval(function() {
+        secondsSurvived++;
+    }, 1000);
+
+    setInterval(function() {
+        timePassedAfterFiring++;
+    }, rateOfFire);
 }
 
 function tick() {
     if (game_state == 'playing') {
-        // TODO: Use real-time seconds
-        timeSinceLastShot += 0.8; 
-        
         turnShip();
         pushShip();
         pushProjectiles();
@@ -88,9 +101,21 @@ function tick() {
         if (ship !== undefined) {
             positionCursor();
         }
+
+        drawWatermark();
         
         stage.update();
     }
+}
+
+function drawWatermark() {
+    let gameTitle = new createjs.Text("Asteroids - CreateJS", "14px Arial", '#000000');
+
+    gameTitle.textAlign = 'right';
+    gameTitle.x = stage.canvas.width - 15;
+    gameTitle.y = stage.canvas.height - 30;
+
+    stage.addChild(gameTitle);
 }
 
 function createCursor() {
@@ -251,6 +276,8 @@ function isBlastCollidingWithRock(fireBlast) {
     
                 projectiles.splice(projectiles.indexOf(fireBlast), 1);
                 createjs.Sound.play('meteorite_explosion');
+                
+                rocksDestroyed++;
                 return true;
         }
     });
@@ -569,7 +596,7 @@ function pushShip() {
 }
 
 function fire() {
-    if (timeSinceLastShot >= rateOfFire) {
+    if (timePassedAfterFiring >= rateOfFire) {
         createjs.Sound.play('fire');
 
         let projectileGraphic = new createjs.Graphics();
@@ -596,6 +623,7 @@ function fire() {
         projectiles.push(projectileObj);
         stage.addChild(projectile);
 
-        timeSinceLastShot = 0;
+        firesBlasted++;
+        timePassedAfterFiring = 0;
     }
 }
