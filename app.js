@@ -18,6 +18,7 @@ const FIRE_KEY = 74;
 // *************************
 let ship, shipObj, shipContainer;
 let projectiles = [];
+let shipExplosion;
 
 const SHIP_SPEED = 3;
 const TURN_SPEED = 5;
@@ -57,7 +58,7 @@ let secondsSurvivedLabel;
 let rocksDestroyedLabel;
 let blastsFiredLabel;
 let introObj;
-let creditsObj;
+let creditsObj, creditsDomObj;
 
 function init() {
     introObj = document.getElementById('intro');
@@ -123,13 +124,13 @@ function tick() {
 }
 
 function drawScores() {
-    secondsSurvivedLabel = new createjs.Text('⏱️  Seconds survived: ' + secondsSurvived, '14px Segoe UI', '#960000');
+    secondsSurvivedLabel = new createjs.Text('⏱️   Seconds survived: ' + secondsSurvived, '14px Segoe UI', '#960000');
     secondsSurvivedLabel.textAlign = 'left';
     secondsSurvivedLabel.x = 15;
     secondsSurvivedLabel.y = 15;
     secondsSurvivedLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
 
-    rocksDestroyedLabel = new createjs.Text('☄️ Rocks destroyed: ' + rocksDestroyed, '14px Segoe UI', '#960000');
+    rocksDestroyedLabel = new createjs.Text('☄️  Rocks destroyed: ' + rocksDestroyed, '14px Segoe UI', '#960000');
     rocksDestroyedLabel.textAlign = 'left';
     rocksDestroyedLabel.x = 15;
     rocksDestroyedLabel.y = 40;
@@ -288,6 +289,7 @@ function restartGame() {
 
     game_state = 'playing';
     creditsObj.alpha = 0;
+    creditsDomObj.style.pointerEvents = 'none';
     stage.update();
 
     pressingForward = false;
@@ -317,6 +319,8 @@ function restartGame() {
         stage.clear();
     });
     projectiles = [];
+
+    stage.removeChild(shipExplosion);
 }
 
 function isBlastCollidingWithRock(fireBlast) {
@@ -365,7 +369,11 @@ function isShipCollidingWithRock() {
                 allRocksInGame.splice(allRocksInGame.indexOf(rockObj), 1);
 
                 shipContainer.alpha = 0;
-                // stage.removeChild(shipContainer);
+
+                let globalCoordsOfShip = shipContainer.localToGlobal(ship.x, ship.y);
+                shipExplosion.x = globalCoordsOfShip.x -shipExplosion.image.width / 2;
+                shipExplosion.y = globalCoordsOfShip.y - shipExplosion.image.height / 2;
+
                 stage.clear();
 
                 createjs.Sound.play('ship_explosion');
@@ -383,7 +391,7 @@ function isShipCollidingWithRock() {
                 if (creditsObj !== undefined) {
                     creditsObj.alpha = 1;
                 } else {
-                    let creditsDomObj = document.getElementById('credits');
+                    creditsDomObj = document.getElementById('credits');
                     creditsDomObj.style.display = "block";
                     creditsObj = new createjs.DOMElement(creditsDomObj);
                     creditsObj.regX = 0;
@@ -391,8 +399,9 @@ function isShipCollidingWithRock() {
                     creditsObj.x = stage.canvas.width / 2 - 160;
                     creditsObj.y = stage.canvas.height / 2 - 90;
                 }
+                creditsDomObj.style.pointerEvents = 'all';
                 
-                stage.addChild(creditsObj);
+                stage.addChild(creditsObj, shipExplosion);
                 return true;
         }
     });
@@ -415,7 +424,7 @@ function spawnRocks() {
             rock.x = spawner.x;
             rock.y = spawner.y;
 
-            rock.setBounds(rock.x, rock.y, rock.image.width, rock.image.height,);
+            rock.setBounds(rock.x, rock.y, rock.image.width, rock.image.height);
 
             let rockObj = {
                 id: rockId,
@@ -498,9 +507,14 @@ function loadAudio() {
 function loadShip() {
     queue = new createjs.LoadQueue();
 
-    queue.loadFile({id:'ship', src:'./assets/space_ship.png'});
+    queue.loadManifest([
+        {id:'ship', src:'./assets/space_ship.png'},
+        {id:'ship_explosion', src:'./assets/ship_explosion.png'}
+    ]);
+
     queue.addEventListener('complete', function() {
         ship = new createjs.Bitmap(queue.getResult('ship'));
+        shipExplosion = new createjs.Bitmap(queue.getResult('ship_explosion'));
 
         // Starting Position
         ship.x = stage.canvas.width / 2;
