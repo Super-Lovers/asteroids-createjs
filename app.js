@@ -678,8 +678,23 @@ function pushShip() {
         shipObj.directionNormalX = vectorNormalX;
         shipObj.directionNormalY = vectorNormalY;
 
+        let padding = 20;
+        if (globalCoordsOfShip.x > stage.canvas.width - padding) {
+            shipContainer.x = 0 + padding;
+        }
+        if (globalCoordsOfShip.x < 0 + padding) {
+            shipContainer.x = stage.canvas.width - padding;
+        }
+        if (globalCoordsOfShip.y < 0 + padding) {
+            shipContainer.y = stage.canvas.height - padding;
+        }
+        if (globalCoordsOfShip.y > stage.canvas.height - padding) {
+            shipContainer.y = 0 + padding;
+        }
+
         shipContainer.x += shipObj.directionNormalX * SHIP_SPEED;
         shipContainer.y += shipObj.directionNormalY * SHIP_SPEED;
+
         shipObj.ship.setBounds(shipObj.ship.x, shipObj.ship.y, 32, 42);
 
         shipContainer.addChild(ship, cursorShape, engineAnimation);
