@@ -17,3 +17,45 @@ canvas {
     border: 1px solid rosybrown;
     border-radius: 5px;
 }
+
+#credits {
+    z-index: 1;
+    display: none;
+    /* position: absolute;
+    margin: auto;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0; */
+    width: 400px;
+    height: 240px;
+    background: white;
+    text-align: center;
+    border: 1px solid rosybrown;
+    border-radius: 5px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#credits > p {
+    margin: 0 auto;
+    padding: 5px 0;
+    width: 300px;
+}
+
+button {
+    position: relative;
+    top: 15px;
+    padding: 5px 15px;
+    border: none;
+    background-color: salmon;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border-radius: 3px;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: white;
+    color: salmon;
+}

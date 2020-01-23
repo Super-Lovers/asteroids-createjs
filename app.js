@@ -51,7 +51,13 @@ let wavesSinceSpawned = 0;
 // *************************
 let rocksDestroyed = 0;
 let secondsSurvived = 0;
-let firesBlasted = 0;
+let blastsFired = 0;
+
+let secondsSurvivedLabel;
+let rocksDestroyedLabel;
+let blastsFiredLabel;
+let gameTitle;
+let creditsObj;
 
 function init() {
     canvas = document.getElementById('demoCanvas');
@@ -69,20 +75,26 @@ function init() {
 
     setTimeout(function() {
         backgroundMusic = createjs.Sound.play('background_music');
-        backgroundMusic.volume = 0.008;
+        backgroundMusic.volume = 0.015;
         backgroundMusic.loop = true;
     }, 2000);
 
     setInterval(function() {
-        secondsSurvived++;
+        if (game_state == 'playing') {
+            secondsSurvived++;
+        }
     }, 1000);
 
     setInterval(function() {
-        timePassedAfterFiring++;
+        if (game_state == 'playing') {
+            timePassedAfterFiring++;
+        }
     }, rateOfFire);
 }
 
 function tick() {
+    stage.removeChild(gameTitle, secondsSurvivedLabel, rocksDestroyedLabel, blastsFiredLabel);
+
     if (game_state == 'playing') {
         turnShip();
         pushShip();
@@ -103,19 +115,43 @@ function tick() {
         }
 
         drawWatermark();
+        drawScores();
         
         stage.update();
     }
 }
 
 function drawWatermark() {
-    let gameTitle = new createjs.Text("Asteroids - CreateJS", "14px Arial", '#000000');
+    gameTitle = new createjs.Text("Asteroids - CreateJS", "14px Segoe UI", '#960000');
 
     gameTitle.textAlign = 'right';
     gameTitle.x = stage.canvas.width - 15;
     gameTitle.y = stage.canvas.height - 30;
+    gameTitle.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
 
     stage.addChild(gameTitle);
+}
+
+function drawScores() {
+    secondsSurvivedLabel = new createjs.Text('Seconds survived: ' + secondsSurvived, '14px Segoe UI', '#960000');
+    secondsSurvivedLabel.textAlign = 'left';
+    secondsSurvivedLabel.x = 15;
+    secondsSurvivedLabel.y = 15;
+    secondsSurvivedLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
+
+    rocksDestroyedLabel = new createjs.Text('Rocks destroyed: ' + rocksDestroyed, '14px Segoe UI', '#960000');
+    rocksDestroyedLabel.textAlign = 'left';
+    rocksDestroyedLabel.x = 15;
+    rocksDestroyedLabel.y = 35;
+    rocksDestroyedLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
+
+    blastsFiredLabel = new createjs.Text('Blasts fired: ' + blastsFired, '14px Segoe UI', '#960000');
+    blastsFiredLabel.textAlign = 'left';
+    blastsFiredLabel.x = 15;
+    blastsFiredLabel.y = 55;
+    blastsFiredLabel.shadow = new createjs.Shadow('#ffffff', 0, 0, 20);
+
+    stage.addChild(secondsSurvivedLabel, rocksDestroyedLabel, blastsFiredLabel);
 }
 
 function createCursor() {
@@ -255,6 +291,44 @@ function pushRocks() {
     });
 }
 
+function restartGame() {
+    rocksDestroyed = 0;
+    blastsFired = 0;
+    secondsSurvived = 0;
+
+    game_state = 'playing';
+    creditsObj.alpha = 0;
+    stage.update();
+
+    pressingForward = false;
+    
+    if (engineSoundEffect !== undefined) {
+        engineSoundEffect.stop();
+    }
+    if (engineAnimation !== undefined) {
+        engineAnimation.stop();
+    }
+
+    backgroundMusic.play();
+
+    shipContainer.alpha = 1;
+    shipContainer.rotation = 0;
+    shipContainer.x = stage.canvas.width / 2;
+    shipContainer.y = stage.canvas.height / 2;
+
+    allRocksInGame.forEach(rockObj => {
+        stage.removeChild(rockObj.rock);
+        stage.clear();
+    });
+    allRocksInGame = [];
+
+    projectiles.forEach(projectileObj => {
+        stage.removeChild(projectileObj.projectile);
+        stage.clear();
+    });
+    projectiles = [];
+}
+
 function isBlastCollidingWithRock(fireBlast) {
     let isColliding = false;
 
@@ -300,7 +374,8 @@ function isShipCollidingWithRock() {
 
                 allRocksInGame.splice(allRocksInGame.indexOf(rockObj), 1);
 
-                stage.removeChild(shipContainer);
+                shipContainer.alpha = 0;
+                // stage.removeChild(shipContainer);
                 stage.clear();
 
                 createjs.Sound.play('ship_explosion');
@@ -314,7 +389,20 @@ function isShipCollidingWithRock() {
                 if (backgroundMusic !== undefined) {
                     backgroundMusic.stop();
                 }
+
+                if (creditsObj !== undefined) {
+                    creditsObj.alpha = 1;
+                } else {
+                    let creditsDomObj = document.getElementById('credits');
+                    creditsDomObj.style.display = "block";
+                    creditsObj = new createjs.DOMElement(creditsDomObj);
+                    creditsObj.regX = 0;
+                    creditsObj.regY = 0;
+                    creditsObj.x = stage.canvas.width / 2 - 150;
+                    creditsObj.y = stage.canvas.height / 2 - 60;
+                }
                 
+                stage.addChild(creditsObj);
                 return true;
         }
     });
@@ -623,7 +711,7 @@ function fire() {
         projectiles.push(projectileObj);
         stage.addChild(projectile);
 
-        firesBlasted++;
+        blastsFired++;
         timePassedAfterFiring = 0;
     }
 }
